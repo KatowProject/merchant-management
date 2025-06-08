@@ -10,4 +10,7 @@ type User struct {
 	Email    string `json:"email" gorm:"unique;not null"`
 	Password *string `json:"password" gorm:"not null"`
 	Role     string `json:"role" gorm:"default:'user'"`
+	CreatedAt gorm.DeletedAt `json:"created_at" gorm:"index"`
+	UpdatedAt gorm.DeletedAt `json:"updated_at" gorm:"index"`
+	DeletedAt gorm.DeletedAt `json:"deleted_at" gorm:"index"`
 }

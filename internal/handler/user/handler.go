@@ -64,6 +64,7 @@ func (h *UserHandler) GetUserByID(c *gin.Context) {
 		})
 		return
 	}
+	
 	c.JSON(http.StatusOK, Response{
 		Status:  "success",
 		Message: "User fetched successfully",
