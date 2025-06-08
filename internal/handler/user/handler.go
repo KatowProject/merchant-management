@@ -1,6 +1,7 @@
 package user
 
 import (
+	"merchant-management/internal/repository"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -12,18 +13,40 @@ type User struct {
 	Email string `json:"email"`
 }
 
-type UserHandler struct{}
+type Response struct {
+	Status 	string `json:"status"`
+	Message string `json:"message"`
+	Data    any    `json:"data,omitempty"`
+}
 
-func NewUserHandler() *UserHandler {
-	return &UserHandler{}
+type ErrorResponse struct {
+	Status  string `json:"status"`
+	Message string `json:"message"`
+}
+
+type UserHandler struct{
+	repo *repository.UserRepository
+}
+
+func NewUserHandler(repo *repository.UserRepository) *UserHandler {
+	return &UserHandler{repo: repo}
 }
 
 func (h *UserHandler) GetAllUsers(c *gin.Context) {
-	users := []User{
-		{ID: "1", Name: "Alice", Email: "alice@example.com"},
-		{ID: "2", Name: "Bob", Email: "bob@example.com"},
+	users, err := h.repo.FindAll()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{
+			Status:  "error",
+			Message: "Failed to fetch users: " + err.Error(),
+		})
+		return
 	}
-	c.JSON(http.StatusOK, users)
+
+	c.JSON(http.StatusOK, Response{
+		Status:  "success",
+		Message: "Users fetched successfully",
+		Data:    users,
+	})
 }
 
 func (h *UserHandler) GetUserByID(c *gin.Context) {

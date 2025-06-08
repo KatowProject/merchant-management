@@ -1,11 +1,21 @@
 package user
 
 import (
-    "github.com/gin-gonic/gin"
+	"merchant-management/internal/db"
+	"merchant-management/internal/repository"
+
+	"github.com/gin-gonic/gin"
 )
 
 func RegisterUserRoutes(rg *gin.RouterGroup) {
-    handler := NewUserHandler()
+
+    db, db_err := db.GetDB()
+    if db_err != nil {
+        panic("Failed to connect to the database: " + db_err.Error())
+    }
+
+    userRepo := repository.NewUserRepository(db)
+    handler := NewUserHandler(userRepo)
 
     userGroup := rg.Group("/users")
     {
