@@ -1,27 +1,16 @@
 package user
 
 import (
+	"merchant-management/internal/model"
 	"merchant-management/internal/repository"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
-
-type User struct {
-	ID    string `json:"id"`
-	Name  string `json:"name"`
-	Email string `json:"email"`
-}
-
 type Response struct {
 	Status 	string `json:"status"`
 	Message string `json:"message"`
 	Data    any    `json:"data,omitempty"`
-}
-
-type ErrorResponse struct {
-	Status  string `json:"status"`
-	Message string `json:"message"`
 }
 
 type UserHandler struct{
@@ -35,7 +24,7 @@ func NewUserHandler(repo *repository.UserRepository) *UserHandler {
 func (h *UserHandler) GetAllUsers(c *gin.Context) {
 	users, err := h.repo.FindAll()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{
+		c.JSON(http.StatusInternalServerError, Response{
 			Status:  "error",
 			Message: "Failed to fetch users: " + err.Error(),
 		})
@@ -50,36 +39,55 @@ func (h *UserHandler) GetAllUsers(c *gin.Context) {
 }
 
 func (h *UserHandler) GetUserByID(c *gin.Context) {
-	id := c.Param("id")
+	var id uint
+	if err := c.ShouldBindUri(&id); err != nil {
+		c.JSON(http.StatusBadRequest, Response{
+			Status:  "error",
+			Message: "Invalid user ID",
+		})
+		return
+	}
 
-	user := User{ID: id, Name: "Dummy", Email: "dummy@example.com"}
-	c.JSON(http.StatusOK, user)
+	user, err := h.repo.FindByID(id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, Response{
+			Status:  "error",
+			Message: "Failed to fetch user: " + err.Error(),
+		})
+		return
+	}
+
+	if user == nil {
+		c.JSON(http.StatusNotFound, Response{
+			Status:  "error",
+			Message: "User not found",
+		})
+		return
+	}
+	c.JSON(http.StatusOK, Response{
+		Status:  "success",
+		Message: "User fetched successfully",
+		Data:    user,
+	})
+
 }
 
 func (h *UserHandler) CreateUser(c *gin.Context) {
-	var newUser User
-	if err := c.ShouldBindJSON(&newUser); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	var user model.User	
+	if err := c.ShouldBindJSON(&user); err != nil {
+		c.JSON(http.StatusBadRequest, Response{
+			Status:  "error",
+			Message: "Invalid user data: " + err.Error(),
+		})
 		return
 	}
 
-	newUser.ID = "3"
-	c.JSON(http.StatusCreated, newUser)
 }
 
 func (h *UserHandler) UpdateUser(c *gin.Context) {
-	id := c.Param("id")
-	var updatedUser User
-	if err := c.ShouldBindJSON(&updatedUser); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
 
-	updatedUser.ID = id
-	c.JSON(http.StatusOK, updatedUser)
 }
 
 func (h *UserHandler) DeleteUser(c *gin.Context) {
-	id := c.Param("id")
-	c.JSON(http.StatusOK, gin.H{"message": "User deleted", "id": id})
+
 }
