@@ -3,6 +3,7 @@ package auth
 import (
 	"merchant-management/internal/db"
 	"merchant-management/internal/repository"
+	"merchant-management/internal/service"
 
 	"github.com/gin-gonic/gin"
 )
@@ -13,8 +14,9 @@ func RegisterAuthRoutes(router *gin.RouterGroup) {
 		panic("Failed to connect to the database: " + err.Error())
 	}
 
-	useRepo := repository.NewUserRepository(db)
-	authHandler := NewAuthHandler(useRepo)
+	userRepo := repository.NewUserRepository(db)
+	authService := service.NewAuthService(userRepo)
+	authHandler := NewAuthHandler(authService)
 
 	auth := router.Group("/auth")
 	{

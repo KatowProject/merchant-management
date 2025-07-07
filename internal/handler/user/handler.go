@@ -2,7 +2,7 @@ package user
 
 import (
 	"merchant-management/internal/model"
-	"merchant-management/internal/repository"
+	"merchant-management/internal/service"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -14,15 +14,15 @@ type Response struct {
 }
 
 type UserHandler struct{
-	repo *repository.UserRepository
+	service service.UserService
 }
 
-func NewUserHandler(repo *repository.UserRepository) *UserHandler {
-	return &UserHandler{repo: repo}
+func NewUserHandler(service service.UserService) *UserHandler {
+	return &UserHandler{service: service}
 }
 
 func (h *UserHandler) GetAllUsers(c *gin.Context) {
-	users, err := h.repo.FindAll()
+	users, err := h.service.GetAllUser()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, Response{
 			Status:  "error",
@@ -39,7 +39,10 @@ func (h *UserHandler) GetAllUsers(c *gin.Context) {
 }
 
 func (h *UserHandler) GetUserByID(c *gin.Context) {
-	var id uint
+	var uri struct {
+		ID uint `uri:"id" binding:"required"`
+	}
+
 	if err := c.ShouldBindUri(&id); err != nil {
 		c.JSON(http.StatusBadRequest, Response{
 			Status:  "error",
@@ -48,7 +51,9 @@ func (h *UserHandler) GetUserByID(c *gin.Context) {
 		return
 	}
 
-	user, err := h.repo.FindByID(id)
+	print("id:", id.ID)
+
+	user, err := h.service.GetUserByID(id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, Response{
 			Status:  "error",
@@ -82,6 +87,21 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 		})
 		return
 	}
+
+	createdUser, err := h.service.CreateUser(&user)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, Response{
+			Status:  "error",
+			Message: "Failed to create user: " + err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, Response{
+		Status:  "success",
+		Message: "User created successfully",
+		Data:    createdUser,
+	})
 
 }
 

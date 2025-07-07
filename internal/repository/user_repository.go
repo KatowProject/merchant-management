@@ -15,12 +15,12 @@ func NewUserRepository(db *gorm.DB) *UserRepository {
 	return &UserRepository{db: db}
 }
 
-func (r *UserRepository) Create(user *model.User) (model.User, error) {
+func (r *UserRepository) Create(user *model.User) (*model.User, error) {
 	result := r.db.Create(user)
 	if result.Error != nil {
-		return model.User{}, result.Error
+		return nil, result.Error
 	}
-	return *user, nil
+	return user, nil
 }
 
 func (r *UserRepository) FindAll() ([]model.User, error) {
@@ -43,30 +43,25 @@ func (r *UserRepository) FindByID(id uint) (*model.User, error) {
 
 func (r *UserRepository) FindByUsernameOrEmail(username string) (*model.User, error) {
 	var user model.User
-	result := r.db.Where("username = ? OR email = ?", username, user).First(&user)
+	result := r.db.Where("username = ? OR email = ?", username, username).First(&user)
 	if result.Error != nil {
-		if result.Error == gorm.ErrRecordNotFound {
-			return nil, errors.New("user not found") // User not found
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return nil, errors.New("user not found")
 		}
-		return nil, result.Error // Other error
+		return nil, result.Error
 	}
 	return &user, nil
 }
 
-func (r *UserRepository) Update(user *model.User) (model.User, error) {
-	// Update the user in the database
+func (r *UserRepository) Update(user *model.User) (*model.User, error) {
 	result := r.db.Save(user)
 	if result.Error != nil {
-		return model.User{}, result.Error
+		return nil, result.Error
 	}
-	return *user, nil
+	return user, nil
 }
 
 func (r *UserRepository) Delete(id uint) error {
-	// Delete the user from the database
 	result := r.db.Delete(&model.User{}, id)
-	if result.Error != nil {
-		return result.Error
-	}
-	return nil
+	return result.Error
 }

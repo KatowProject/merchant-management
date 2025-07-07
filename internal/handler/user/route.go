@@ -3,19 +3,21 @@ package user
 import (
 	"merchant-management/internal/db"
 	"merchant-management/internal/repository"
+	"merchant-management/internal/service"
 
 	"github.com/gin-gonic/gin"
 )
 
 func RegisterUserRoutes(rg *gin.RouterGroup) {
 
-    db, db_err := db.GetDB()
-    if db_err != nil {
-        panic("Failed to connect to the database: " + db_err.Error())
+    db, err := db.GetDB()
+    if err != nil {
+        panic("Failed to connect to the database: " + err.Error())
     }
 
     userRepo := repository.NewUserRepository(db)
-    handler := NewUserHandler(userRepo)
+    userService := service.NewUserService(userRepo)
+    handler := NewUserHandler(userService)
 
     userGroup := rg.Group("/users")
     {
