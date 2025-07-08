@@ -3,6 +3,7 @@ package user
 import (
 	"merchant-management/internal/model"
 	"merchant-management/internal/service"
+	"merchant-management/internal/validation"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -39,51 +40,57 @@ func (h *UserHandler) GetAllUsers(c *gin.Context) {
 }
 
 func (h *UserHandler) GetUserByID(c *gin.Context) {
-	var uri struct {
-		ID uint `uri:"id" binding:"required"`
-	}
+    var uri struct {
+        ID uint `uri:"id" binding:"required"`
+    }
 
-	if err := c.ShouldBindUri(&id); err != nil {
-		c.JSON(http.StatusBadRequest, Response{
-			Status:  "error",
-			Message: "Invalid user ID",
-		})
-		return
-	}
+    if err := c.ShouldBindUri(&uri); err != nil {
+        c.JSON(http.StatusBadRequest, Response{
+            Status:  "error",
+            Message: "Invalid user ID",
+        })
+        return
+    }
 
-	print("id:", id.ID)
+    user, err := h.service.GetUserByID(uri.ID)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, Response{
+            Status:  "error",
+            Message: "Failed to fetch user: " + err.Error(),
+        })
+        return
+    }
 
-	user, err := h.service.GetUserByID(id)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, Response{
-			Status:  "error",
-			Message: "Failed to fetch user: " + err.Error(),
-		})
-		return
-	}
-
-	if user == nil {
-		c.JSON(http.StatusNotFound, Response{
-			Status:  "error",
-			Message: "User not found",
-		})
-		return
-	}
-	
-	c.JSON(http.StatusOK, Response{
-		Status:  "success",
-		Message: "User fetched successfully",
-		Data:    user,
-	})
-
+    if user == nil {
+        c.JSON(http.StatusNotFound, Response{
+            Status:  "error",
+            Message: "User not found",
+        })
+        return
+    }
+    
+    c.JSON(http.StatusOK, Response{
+        Status:  "success",
+        Message: "User fetched successfully",
+        Data:    user,
+    })
 }
 
 func (h *UserHandler) CreateUser(c *gin.Context) {
-	var user model.User	
+	var user model.User
+
 	if err := c.ShouldBindJSON(&user); err != nil {
 		c.JSON(http.StatusBadRequest, Response{
 			Status:  "error",
 			Message: "Invalid user data: " + err.Error(),
+		})
+		return
+	}
+
+	if err := validation.ValidateUserInput(user, true, false); err != nil {
+		c.JSON(http.StatusBadRequest, Response{
+			Status:  "error",
+			Message: "Validation error: " + err.Error(),
 		})
 		return
 	}
@@ -100,15 +107,98 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 	c.JSON(http.StatusOK, Response{
 		Status:  "success",
 		Message: "User created successfully",
-		Data:    createdUser,
+		Data:    createdUser.Sanitized(),
 	})
 
 }
 
 func (h *UserHandler) UpdateUser(c *gin.Context) {
+	var uri struct {
+		ID uint `uri:"id" binding:"required"`
+	}
+	if err := c.ShouldBindUri(&uri); err != nil {
+		c.JSON(http.StatusBadRequest, Response{
+			Status:  "error",
+			Message: "Invalid user ID",
+		})
+		return
+	}
 
+	// cek apakah user dengan ID yang diberikan ada
+	existingUser, err := h.service.GetUserByID(uri.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, Response{
+			Status:  "error",
+			Message: "Failed to fetch user: " + err.Error(),
+		})
+		return
+	}
+
+	if existingUser == nil {
+		c.JSON(http.StatusNotFound, Response{
+			Status:  "error",
+			Message: "User not found",
+		})
+		return
+	}
+
+	var user model.User
+	if err := c.ShouldBindJSON(&user); err != nil {
+		c.JSON(http.StatusBadRequest, Response{
+			Status:  "error",
+			Message: "Invalid user data: " + err.Error(),
+		})
+		return
+	}
+
+	user.Role = existingUser.Role
+
+	if err := validation.ValidateUserInput(user, true, true); err != nil {
+		c.JSON(http.StatusBadRequest, Response{
+			Status:  "error",
+			Message: "Validation error: " + err.Error(),
+		})
+		return
+	}
+
+	updatedUser, err := h.service.UpdateUser(uri.ID, user)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, Response{
+			Status:  "error",
+			Message: "Failed to update user: " + err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, Response{
+		Status:  "success",
+		Message: "User updated successfully",
+		Data:    updatedUser.Sanitized(),
+	})
 }
 
 func (h *UserHandler) DeleteUser(c *gin.Context) {
+	var uri struct {
+		ID uint `uri:"id" binding:"required"`
+	}
+	if err := c.ShouldBindUri(&uri); err != nil {
+		c.JSON(http.StatusBadRequest, Response{
+			Status:  "error",
+			Message: "Invalid user ID",
+		})
+		return
+	}
 
-}
+	if err := h.service.DeleteUser(uri.ID); err != nil {
+		c.JSON(http.StatusInternalServerError, Response{
+			Status:  "error",
+			Message: "Failed to delete user: " + err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, Response{
+		Status:  "success",
+		Message: "User deleted successfully",
+	})
+}	

@@ -19,7 +19,7 @@ func RunAll(db *gorm.DB) {
 		Name:     "Admin User",
 		Email:    "admin@mail.com",
 		Username: "admin",
-		Password: &pass,
+		Password: pass,
 		Role:     "admin",
 	}
 

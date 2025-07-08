@@ -18,7 +18,7 @@ func SeedUsers(db *gorm.DB, count int) error {
 			Name:     faker.Name(),
 			Email:    faker.Email(),
 			Username: faker.Username(),
-			Password: &pass,
+			Password: pass,
 		}
 
 		if err := db.Create(&user).Error; err != nil {

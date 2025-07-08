@@ -58,7 +58,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
-	createdUser, token, err := h.service.Register(user.Username, user.Name, user.Email, *user.Password)
+	createdUser, token, err := h.service.Register(user.Username, user.Name, user.Email, user.Password)
 
 	if err != nil {
 		if err.Error() == "user already exists" {

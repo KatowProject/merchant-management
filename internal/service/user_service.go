@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"merchant-management/internal/model"
 	"merchant-management/internal/repository"
 )
@@ -9,7 +10,7 @@ type UserService interface {
 	GetAllUser() ([]model.User, error)
 	GetUserByID(id uint) (*model.User, error)
 	CreateUser(user *model.User) (*model.User, error)
-	UpdateUser(user *model.User) (*model.User, error)
+	UpdateUser(id uint, data model.User) (*model.User, error)
 	DeleteUser(id uint) error
 }
 
@@ -39,6 +40,20 @@ func (s *userService) GetUserByID(id uint) (*model.User, error) {
 }
 
 func (s *userService) CreateUser(user *model.User) (*model.User, error) {
+	_, err := s.repo.FindByUsername(user.Username)
+	if err != nil && err.Error() != "user not found" {
+		return nil, err
+	}
+
+	existingUser, err := s.repo.FindByEmail(user.Email)
+	if err != nil && err.Error() != "user not found" {
+		return nil, err
+	}
+
+	if existingUser != nil {
+		return nil, errors.New("user already exists")
+	}
+
 	createdUser, err := s.repo.Create(user)
 	if err != nil {
 		return nil, err
@@ -46,11 +61,41 @@ func (s *userService) CreateUser(user *model.User) (*model.User, error) {
 	return createdUser, nil
 }
 
-func (s *userService) UpdateUser(user *model.User) (*model.User, error) {
-	updatedUser, err := s.repo.Update(user)
+func (s *userService) UpdateUser(id uint, user model.User) (*model.User, error) {
+	// Check if the user exists
+	existingUser, err := s.repo.FindByID(id)
 	if err != nil {
 		return nil, err
 	}
+	if existingUser == nil {
+		return nil, errors.New("user not found")
+	}
+
+	// Check for duplicate username
+	userWithSameUsername, err := s.repo.FindByUsername(user.Username)
+	if err != nil && err.Error() != "user not found" {
+		return nil, err
+	}
+	if userWithSameUsername != nil && userWithSameUsername.ID != id {
+		return nil, errors.New("username already in use")
+	}
+
+	// Check for duplicate email
+	userWithSameEmail, err := s.repo.FindByEmail(user.Email)
+	if err != nil && err.Error() != "user not found" {
+		return nil, err
+	}
+	if userWithSameEmail != nil && userWithSameEmail.ID != id {
+		return nil, errors.New("email already in use")
+	}
+
+	// Update the user details
+	user.ID = existingUser.ID
+	updatedUser, err := s.repo.Update(&user)
+	if err != nil {
+		return nil, err
+	}
+
 	return updatedUser, nil
 }
 

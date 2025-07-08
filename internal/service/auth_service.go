@@ -33,7 +33,7 @@ func (s *authService) Login(username, password string) (*model.User, string, err
 		return nil, "", errors.New("user not found")
 	}
 
-	isValid, err := hasher.Compare(*user.Password, password)
+	isValid, err := hasher.Compare(user.Password, password)
 	if err != nil || !isValid {
 		return nil, "", errors.New("invalid credentials")
 	}
@@ -67,7 +67,7 @@ func (s *authService) Register(username, name, email, password string) (*model.U
 		Username: username,
 		Name:     name,
 		Email:    email,
-		Password: &hashedPassword,
+		Password: hashedPassword,
 	}
 
 	newUser, err := s.repo.Create(user)

@@ -7,13 +7,25 @@ import (
 )
 
 type User struct {
-    ID        uint           `json:"id" gorm:"primaryKey"`
-    Username  string         `json:"username" gorm:"unique;not null"`
-    Name      string         `json:"name" gorm:"not null"`
-    Email     string         `json:"email" gorm:"unique;not null"`
-    Password  *string        `json:"password" gorm:"not null"`
-    Role      string         `json:"role" gorm:"default:'user'"`
-    CreatedAt time.Time      `json:"created_at"`
-    UpdatedAt time.Time      `json:"updated_at"`
-    DeletedAt gorm.DeletedAt `json:"deleted_at" gorm:"index"`
+	ID        uint           `json:"id" gorm:"primaryKey"`
+	Username  string         `json:"username" gorm:"unique;not null"`
+	Name      string         `json:"name" gorm:"not null"`
+	Email     string         `json:"email" gorm:"unique;not null"`
+    Password string `json:"password,omitempty" gorm:"not null"`
+	Role      string         `json:"role" gorm:"default:'user'"`
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+	DeletedAt gorm.DeletedAt `json:"deleted_at" gorm:"index"`
+}
+
+func (u *User) Sanitized() map[string]interface{} {
+	return map[string]interface{}{
+		"id":         u.ID,
+		"username":   u.Username,
+		"name":       u.Name,
+		"email":      u.Email,
+		"role":       u.Role,
+		"created_at": u.CreatedAt,
+		"updated_at": u.UpdatedAt,
+	}
 }
