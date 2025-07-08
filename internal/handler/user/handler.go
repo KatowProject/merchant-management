@@ -124,7 +124,6 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 		return
 	}
 
-	// cek apakah user dengan ID yang diberikan ada
 	existingUser, err := h.service.GetUserByID(uri.ID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, Response{
@@ -152,7 +151,6 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 	}
 
 	user.Role = existingUser.Role
-
 	if err := validation.ValidateUserInput(user, true, true); err != nil {
 		c.JSON(http.StatusBadRequest, Response{
 			Status:  "error",

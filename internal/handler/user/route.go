@@ -2,6 +2,7 @@ package user
 
 import (
 	"merchant-management/internal/db"
+	"merchant-management/internal/middleware"
 	"merchant-management/internal/repository"
 	"merchant-management/internal/service"
 
@@ -20,6 +21,7 @@ func RegisterUserRoutes(rg *gin.RouterGroup) {
     handler := NewUserHandler(userService)
 
     userGroup := rg.Group("/users")
+    userGroup.Use(middleware.JWTMiddleware(), middleware.OnlyAdmin())
     {
         userGroup.GET("/", handler.GetAllUsers)
         userGroup.GET("/:id", handler.GetUserByID)

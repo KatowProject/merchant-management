@@ -41,9 +41,13 @@ func (r *UserRepository) FindByID(id uint) (*model.User, error) {
     return &user, nil
 }
 
-func (r *UserRepository) FindByEmail(email string) (*model.User, error) {
+func (r *UserRepository) FindByEmail(email string, includePassword bool) (*model.User, error) {
     var user model.User
-    result := r.db.Omit("password").Where("email = ?", email).First(&user)
+    query := r.db
+    if !includePassword {
+        query = query.Omit("password")
+    }
+    result := query.Where("email = ?", email).First(&user)
     if result.Error != nil {
         if errors.Is(result.Error, gorm.ErrRecordNotFound) {
             return nil, errors.New("user not found")
@@ -53,9 +57,13 @@ func (r *UserRepository) FindByEmail(email string) (*model.User, error) {
     return &user, nil
 }
 
-func (r *UserRepository) FindByUsername(username string) (*model.User, error) {
+func (r *UserRepository) FindByUsername(username string, includePassword bool) (*model.User, error) {
     var user model.User
-    result := r.db.Omit("password").Where("username = ?", username).First(&user)
+    query := r.db
+    if !includePassword {
+        query = query.Omit("password")
+    }
+    result := query.Where("username = ?", username).First(&user)
     if result.Error != nil {
         if errors.Is(result.Error, gorm.ErrRecordNotFound) {
             return nil, errors.New("user not found")
@@ -67,8 +75,7 @@ func (r *UserRepository) FindByUsername(username string) (*model.User, error) {
 
 func (r *UserRepository) FindByUsernameOrEmail(username string) (*model.User, error) {
     var user model.User
-    result := r.db.Omit("password").
-        Where("username = ? OR email = ?", username, username).First(&user)
+    result := r.db.Where("username = ? OR email = ?", username, username).First(&user)
     if result.Error != nil {
         if errors.Is(result.Error, gorm.ErrRecordNotFound) {
             return nil, errors.New("user not found")

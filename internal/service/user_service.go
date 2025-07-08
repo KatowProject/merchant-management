@@ -4,6 +4,7 @@ import (
 	"errors"
 	"merchant-management/internal/model"
 	"merchant-management/internal/repository"
+	"merchant-management/pkg/hash"
 )
 
 type UserService interface {
@@ -40,12 +41,13 @@ func (s *userService) GetUserByID(id uint) (*model.User, error) {
 }
 
 func (s *userService) CreateUser(user *model.User) (*model.User, error) {
-	_, err := s.repo.FindByUsername(user.Username)
+	var hasher hash.Hasher = hash.BcryptHasher{}
+	_, err := s.repo.FindByUsername(user.Username, false)
 	if err != nil && err.Error() != "user not found" {
 		return nil, err
 	}
 
-	existingUser, err := s.repo.FindByEmail(user.Email)
+	existingUser, err := s.repo.FindByEmail(user.Email, false)
 	if err != nil && err.Error() != "user not found" {
 		return nil, err
 	}
@@ -53,6 +55,13 @@ func (s *userService) CreateUser(user *model.User) (*model.User, error) {
 	if existingUser != nil {
 		return nil, errors.New("user already exists")
 	}
+
+	hashedPassword, err := hasher.Hash(user.Password)
+    if err != nil {
+        return nil, err
+    }
+
+    user.Password = hashedPassword
 
 	createdUser, err := s.repo.Create(user)
 	if err != nil {
@@ -72,7 +81,7 @@ func (s *userService) UpdateUser(id uint, user model.User) (*model.User, error) 
 	}
 
 	// Check for duplicate username
-	userWithSameUsername, err := s.repo.FindByUsername(user.Username)
+	userWithSameUsername, err := s.repo.FindByUsername(user.Username, false)
 	if err != nil && err.Error() != "user not found" {
 		return nil, err
 	}
@@ -81,7 +90,7 @@ func (s *userService) UpdateUser(id uint, user model.User) (*model.User, error) 
 	}
 
 	// Check for duplicate email
-	userWithSameEmail, err := s.repo.FindByEmail(user.Email)
+	userWithSameEmail, err := s.repo.FindByEmail(user.Email, false)
 	if err != nil && err.Error() != "user not found" {
 		return nil, err
 	}
@@ -89,7 +98,6 @@ func (s *userService) UpdateUser(id uint, user model.User) (*model.User, error) 
 		return nil, errors.New("email already in use")
 	}
 
-	// Update the user details
 	user.ID = existingUser.ID
 	updatedUser, err := s.repo.Update(&user)
 	if err != nil {

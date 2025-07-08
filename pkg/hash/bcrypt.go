@@ -16,9 +16,9 @@ func (BcryptHasher) Compare(hashedPassword, password string) (bool, error) {
 	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 	if err != nil {
 		if err == bcrypt.ErrMismatchedHashAndPassword {
-			return false, nil // Passwords do not match
+			return false, nil
 		}
-		return false, err // Some other error occurred
+		return false, err
 	}
-	return true, nil // Passwords match
+	return true, nil
 }

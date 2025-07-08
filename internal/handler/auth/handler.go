@@ -24,17 +24,26 @@ type LoginRequest struct {
 func (h *AuthHandler) Login(c *gin.Context) {
 	var req LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request format"})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"status":  "error",
+			"message": "Invalid request format",
+		})
 		return
 	}
-
+	
 	user, token, err := h.service.Login(req.Username, req.Password)
 	if err != nil {
-		if err.Error() == "user not found" || err.Error() == "invalid credentials" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username or password"})
+		if err.Error() == "user not found" {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"status":  "error",
+				"message": "Invalid username or password",
+			})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to login"})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"status":  "error",
+			"message": "Failed to login: " + err.Error(),
+		})
 		return
 	}
 
